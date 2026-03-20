@@ -1,6 +1,15 @@
-from pydantic import BaseModel
+from enum import Enum
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
+
+
+class ValidationStatus(str, Enum):
+    NOT_FOUND = "NOT_FOUND"
+    REVOKED = "REVOKED"
+    EXPIRED = "EXPIRED"
+    UNAUTHORIZED_MACHINE = "UNAUTHORIZED_MACHINE"
+    ALREADY_ACTIVATED = "ALREADY_ACTIVATED"
 
 
 class SerialCreate(BaseModel):
@@ -22,10 +31,11 @@ class SerialResponse(BaseModel):
 
 
 class ValidateRequest(BaseModel):
-    serial_key: str
-    fingerprint: str
+    serial_key: str = Field(max_length=256)
+    fingerprint: str = Field(max_length=512)
 
 
 class ValidateResponse(BaseModel):
     valid: bool
+    status: Optional[ValidationStatus] = None
     message: Optional[str] = None

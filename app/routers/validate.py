@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas import ValidateRequest
+from app.schemas import ValidateRequest, ValidationStatus
 from app.services.serial_service import validate_serial
 
 router = APIRouter()
@@ -15,7 +15,7 @@ def validate(body: ValidateRequest, db: Session = Depends(get_db)):
 
     if response.valid:
         status_code = 200
-    elif response.message == "Invalid serial":
+    elif response.status == ValidationStatus.NOT_FOUND:
         status_code = 401
     else:
         status_code = 403

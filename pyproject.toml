@@ -1,7 +1,7 @@
 [project]
 name = "serial-validator"
 version = "0.1.0"
-description = "Add your description here"
+description = "REST API for serial key authentication with per-machine fingerprint binding"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

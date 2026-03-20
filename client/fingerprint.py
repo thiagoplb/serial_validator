@@ -6,7 +6,10 @@ import uuid
 
 
 def _get_mac_address() -> str:
-    return format(uuid.getnode(), "x")
+    node = uuid.getnode()
+    if node >> 40 & 1:
+        return ""
+    return format(node, "x")
 
 
 def _get_disk_serial_windows() -> str:
@@ -18,9 +21,16 @@ def _get_disk_serial_windows() -> str:
 
 
 def _get_disk_serial_linux() -> str:
-    return subprocess.check_output(
-        "blkid -s UUID -o value /dev/sda", shell=True
-    ).decode().strip()
+    try:
+        devices = subprocess.check_output(
+            "lsblk -dno NAME,TYPE | awk '$2==\"disk\"{print $1}'", shell=True
+        ).decode().splitlines()
+        device = devices[0].strip() if devices else "sda"
+        return subprocess.check_output(
+            f"blkid -s UUID -o value /dev/{device}", shell=True
+        ).decode().strip()
+    except Exception:
+        return ""
 
 
 def _get_disk_serial() -> str:
