@@ -1,97 +1,47 @@
-# Serial Validator
+# CLAUDE.md
 
-REST API para validação de seriais de software vinculados a máquinas específicas.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Stack
+## Commands
 
-- **Runtime**: Python 3.11+, gerenciado com `uv`
-- **Framework**: FastAPI
-- **ORM**: SQLAlchemy + SQLite
-- **Migrations**: Alembic
-- **Config**: python-dotenv
-
-## Comandos essenciais
+`uv` is not on PATH — always invoke it via `python -m uv`.
 
 ```bash
-# Rodar a API em desenvolvimento
+# Run the API
 python -m uv run uvicorn app.main:app --reload
 
-# Aplicar migrations
+# Apply migrations
 python -m uv run alembic upgrade head
 
-# Gerar nova migration após alterar models.py
-python -m uv run alembic revision --autogenerate -m "descrição"
+# Generate a migration after changing models.py
+python -m uv run alembic revision --autogenerate -m "description"
 
-# Adicionar dependência
-python -m uv add <pacote>
+# Add a dependency
+python -m uv add <package>
 ```
 
-## Estrutura
+## Architecture
 
-```
-app/
-  config.py          # Lê ADMIN_API_KEY e DATABASE_URL do .env
-  database.py        # Engine, SessionLocal, Base, get_db()
-  models.py          # Modelo Serial (tabela serials)
-  schemas.py         # Pydantic schemas (request/response)
-  main.py            # FastAPI app, inclui os routers
-  routers/
-    admin.py         # Endpoints admin (protegidos por X-Admin-Key)
-    validate.py      # POST /validate (público)
-  services/
-    serial_service.py  # Lógica de validação do serial
-client/
-  fingerprint.py     # Módulo standalone: get_fingerprint() -> str
-alembic/             # Migrations
-```
+The app separates routing from business logic: routers handle HTTP concerns, `serial_service.py` owns all validation logic.
 
-## Variáveis de ambiente (`.env`)
+**Request flow for `POST /validate`:**
+`validate.py` → `validate_serial()` in `serial_service.py` → returns a `ValidateResponse` → router maps it to the correct HTTP status (200 / 401 / 403).
 
+**Admin auth:** `verify_admin_key` is a FastAPI dependency in `admin.py` that reads `ADMIN_API_KEY` from `app/config.py` (loaded via `.env`). Applied via `dependencies=[Depends(verify_admin_key)]` on each route.
+
+**DB session:** `get_db()` in `database.py` is a generator dependency injected into every route handler. The engine is SQLite with `check_same_thread=False`.
+
+**Serial lifecycle:**
+- Created by admin with optional `pre_bound_fingerprint` (for replacement serials) and `expires_at`.
+- `fingerprint` column is `null` until first `POST /validate` call, which binds it permanently to that machine.
+- Replacement flow: admin creates a new serial with `pre_bound_fingerprint` set to the new machine's fingerprint — validation passes only for that machine.
+
+**`client/fingerprint.py`** is a standalone stdlib-only module (no pip dependencies) meant to be embedded in client software. `get_fingerprint()` collects MAC + disk serial + CPU identifier and returns their SHA-256 hex digest. Windows uses `wmic`, Linux uses `blkid`, with silent fallback to empty string on failure.
+
+## Environment
+
+`.env` (gitignored) must exist at project root:
 ```
-ADMIN_API_KEY=<chave-forte>
+ADMIN_API_KEY=<strong-key>
 DATABASE_URL=sqlite:///./serials.db
 ```
-
-O arquivo `.env` é ignorado pelo git. Nunca comitar.
-
-## Autenticação admin
-
-Todos os endpoints `/admin/*` exigem o header `X-Admin-Key` com o valor de `ADMIN_API_KEY`.
-
-## Endpoints
-
-| Método | Rota | Auth | Descrição |
-|---|---|---|---|
-| POST | `/admin/serials` | Admin | Criar serial |
-| GET | `/admin/serials` | Admin | Listar seriais |
-| GET | `/admin/serials/{id}` | Admin | Detalhe do serial |
-| PATCH | `/admin/serials/{id}/revoke` | Admin | Revogar serial |
-| POST | `/validate` | Nenhuma | Validar serial + fingerprint |
-
-## Lógica de validação (`POST /validate`)
-
-1. Serial não encontrado → `401 { valid: false, message: "Serial inválido" }`
-2. `is_active = false` → `403 { valid: false, message: "Serial revogado" }`
-3. `expires_at` expirado → `403 { valid: false, message: "Serial expirado" }`
-4. `pre_bound_fingerprint` definido e não bate → `403 { valid: false, message: "Máquina não autorizada" }`
-5. `fingerprint` nulo → vincula agora → `200 { valid: true }`
-6. `fingerprint` bate → `200 { valid: true }`
-7. `fingerprint` não bate → `403 { valid: false, message: "Serial já ativado em outra máquina" }`
-
-## Modelo de dados (`serials`)
-
-| Campo | Tipo | Observação |
-|---|---|---|
-| `id` | String PK | UUID gerado automaticamente |
-| `serial_key` | String unique | Chave que o usuário digita |
-| `fingerprint` | String nullable | SHA-256 do hardware — nulo até ativação |
-| `pre_bound_fingerprint` | String nullable | Pré-vinculado pelo admin (seriais de reposição) |
-| `expires_at` | DateTime nullable | Expiração opcional |
-| `is_active` | Boolean | Padrão `true`; admin pode revogar |
-| `created_at` | DateTime | Definido automaticamente |
-
-## Fingerprint do cliente
-
-O módulo `client/fingerprint.py` é autônomo (sem dependências externas além da stdlib).
-Coleta: endereço MAC + serial do disco + identificador de CPU → SHA-256 hexadecimal.
-Compatível com Windows (wmic) e Linux (blkid).
