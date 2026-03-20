@@ -8,16 +8,16 @@ def validate_serial(db: Session, serial_key: str, fingerprint: str) -> ValidateR
     serial = db.query(Serial).filter(Serial.serial_key == serial_key).first()
 
     if not serial:
-        return ValidateResponse(valid=False, message="Serial inválido")
+        return ValidateResponse(valid=False, message="Invalid serial")
 
     if not serial.is_active:
-        return ValidateResponse(valid=False, message="Serial revogado")
+        return ValidateResponse(valid=False, message="Serial revoked")
 
     if serial.expires_at is not None and serial.expires_at < datetime.utcnow():
-        return ValidateResponse(valid=False, message="Serial expirado")
+        return ValidateResponse(valid=False, message="Serial expired")
 
     if serial.pre_bound_fingerprint is not None and serial.pre_bound_fingerprint != fingerprint:
-        return ValidateResponse(valid=False, message="Máquina não autorizada")
+        return ValidateResponse(valid=False, message="Unauthorized machine")
 
     if serial.fingerprint is None:
         serial.fingerprint = fingerprint
@@ -27,4 +27,4 @@ def validate_serial(db: Session, serial_key: str, fingerprint: str) -> ValidateR
     if serial.fingerprint == fingerprint:
         return ValidateResponse(valid=True)
 
-    return ValidateResponse(valid=False, message="Serial já ativado em outra máquina")
+    return ValidateResponse(valid=False, message="Serial already activated on another machine")

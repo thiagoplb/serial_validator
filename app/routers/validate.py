@@ -15,7 +15,7 @@ def validate(body: ValidateRequest, db: Session = Depends(get_db)):
 
     if response.valid:
         status_code = 200
-    elif response.message == "Serial inválido":
+    elif response.message == "Invalid serial":
         status_code = 401
     else:
         status_code = 403

@@ -1,5 +1,14 @@
 .worktrees/
 .env
 serials.db
-__pycache__
-.venv
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+pyrightconfig.json
