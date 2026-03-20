@@ -1,8 +1,8 @@
 """create serials table
 
-Revision ID: dfa7c32d5929
+Revision ID: 00f9ad06037e
 Revises: 
-Create Date: 2026-03-20 02:36:03.908468
+Create Date: 2026-03-20 02:40:01.428001
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'dfa7c32d5929'
+revision: str = '00f9ad06037e'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -27,8 +27,8 @@ def upgrade() -> None:
     sa.Column('fingerprint', sa.String(), nullable=True),
     sa.Column('pre_bound_fingerprint', sa.String(), nullable=True),
     sa.Column('expires_at', sa.DateTime(), nullable=True),
-    sa.Column('is_active', sa.Boolean(), nullable=True),
-    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('is_active', sa.Boolean(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('serial_key')
     )
