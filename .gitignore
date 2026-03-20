@@ -1,1 +1,5 @@
 .worktrees/
+.env
+serials.db
+__pycache__
+.venv
