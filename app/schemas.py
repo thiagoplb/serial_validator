@@ -19,3 +19,13 @@ class SerialResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class ValidateRequest(BaseModel):
+    serial_key: str
+    fingerprint: str
+
+
+class ValidateResponse(BaseModel):
+    valid: bool
+    message: Optional[str] = None
