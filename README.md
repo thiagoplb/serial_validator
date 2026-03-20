@@ -23,8 +23,8 @@ A REST API for serial key authentication with machine fingerprint binding. Preve
 ### 1. Clone and install dependencies
 
 ```bash
-git clone <repo-url>
-cd SerialValidator
+git clone https://github.com/thiagoplb/serial_validator.git
+cd serial_validator
 python -m uv sync
 ```
 
